@@ -9,7 +9,7 @@ import pykka
 from pykka.typing import proxy_field, proxy_method
 
 if TYPE_CHECKING:
-    from mopidy.models import Image, Ref, SearchResult, Track
+    from mopidy.models import Chapter, Image, Ref, SearchResult, Track
     from mopidy.types import DistinctField, Query, SearchField, Uri
 
     from ._backend import Backend
@@ -65,6 +65,15 @@ class LibraryProvider:
         """
         return {}
 
+    def get_chapters(self, uris: Iterable[Uri]) -> dict[Uri, list[Chapter]]:
+        """See [mopidy.core.LibraryController.get_chapters][].
+
+        *MAY be implemented by subclass.*
+
+        Default implementation will simply return an empty dictionary.
+        """
+        return {}
+
     def lookup_many(self, uris: Iterable[Uri]) -> dict[Uri, list[Track]]:
         """See [mopidy.core.LibraryController.lookup][].
 
@@ -106,6 +115,7 @@ class LibraryProviderProxy:
     browse = proxy_method(LibraryProvider.browse)
     get_distinct = proxy_method(LibraryProvider.get_distinct)
     get_images = proxy_method(LibraryProvider.get_images)
+    get_chapters = proxy_method(LibraryProvider.get_chapters)
     lookup_many = proxy_method(LibraryProvider.lookup_many)
     lookup = proxy_method(LibraryProvider.lookup)
     refresh = proxy_method(LibraryProvider.refresh)

@@ -145,3 +145,35 @@ class Track(BaseModel):
     modification time in milliseconds since Unix epoch. For other backends
     it could be an equivalent timestamp or simply a version counter.
     """
+
+
+class Chapter(BaseModel):
+    """A cue point / chapter within a single track.
+
+    Represents a named position *inside* one continuous audio file -- a segment
+    of a DJ set or live recording, a podcast chapter, or an audiobook chapter.
+    Fetched lazily and per-URI via
+    [mopidy.core.LibraryController.get_chapters][], mirroring images; it is
+    deliberately not part of the Track model.
+    """
+
+    model: Literal["Chapter"] = Field(
+        default="Chapter",
+        repr=False,
+        alias="__model__",
+    )
+
+    start: DurationMs
+    """Start offset within the track, in milliseconds."""
+
+    length: DurationMs | None = None
+    """Chapter length in milliseconds, or None if unknown."""
+
+    name: str | None = None
+    """Human title for this cue point, e.g. the mixed track's title."""
+
+    artists: frozenset[Artist] = frozenset()
+    """Artists for this cue point (each segment of a DJ mix has its own)."""
+
+    image: Uri | None = None
+    """Optional thumbnail/art URI (podcast and video chapters carry one)."""

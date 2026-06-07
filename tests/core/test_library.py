@@ -5,7 +5,7 @@ import pytest
 
 from mopidy import backend, core
 from mopidy.core import _validation as validation
-from mopidy.models import Image, Ref, SearchResult, Track
+from mopidy.models import Chapter, Image, Ref, SearchResult, Track
 
 
 class BaseCoreLibraryTest(unittest.TestCase):
@@ -16,6 +16,7 @@ class BaseCoreLibraryTest(unittest.TestCase):
         self.backend1.actor_ref.actor_class.__name__ = "DummyBackend1"
         self.library1 = mock.Mock(spec=backend.LibraryProvider)
         self.library1.get_images.return_value.get.return_value = {}
+        self.library1.get_chapters.return_value.get.return_value = {}
         self.library1.root_directory.get.return_value = dummy1_root
         self.backend1.library = self.library1
         self.backend1.has_playlists.return_value.get.return_value = False
@@ -26,6 +27,7 @@ class BaseCoreLibraryTest(unittest.TestCase):
         self.backend2.actor_ref.actor_class.__name__ = "DummyBackend2"
         self.library2 = mock.Mock(spec=backend.LibraryProvider)
         self.library2.get_images.return_value.get.return_value = {}
+        self.library2.get_chapters.return_value.get.return_value = {}
         self.library2.root_directory.get.return_value = dummy2_root
         self.backend2.library = self.library2
         self.backend2.has_playlists.return_value.get.return_value = False
@@ -89,6 +91,47 @@ class CoreLibraryTest(BaseCoreLibraryTest):
         expected = {
             "dummy1:track": (Image(uri="uri1"),),
             "dummy2:track": (Image(uri="uri2"),),
+            "dummy3:track": (),
+            "dummy4:track": (),
+        }
+        assert expected == result
+
+    # -- get_chapters (mirrors get_images) --------------------------------
+
+    def test_get_chapters_returns_empty_dict_for_no_uris(self):
+        assert self.core.library.get_chapters([]) == {}
+
+    def test_get_chapters_returns_empty_result_for_unknown_uri(self):
+        result = self.core.library.get_chapters(["dummy4:track"])
+        assert result == {"dummy4:track": ()}
+
+    def test_get_chapters_maps_uri_to_backend(self):
+        self.core.library.get_chapters(["dummy1:track"])
+        self.library1.get_chapters.assert_called_once_with(["dummy1:track"])
+        self.library2.get_chapters.assert_not_called()
+
+    def test_get_chapters_returns_chapters(self):
+        self.library1.get_chapters.return_value.get.return_value = {
+            "dummy1:track": [Chapter(start=0, name="Intro")],
+        }
+
+        result = self.core.library.get_chapters(["dummy1:track"])
+        assert result == {"dummy1:track": (Chapter(start=0, name="Intro"),)}
+
+    def test_get_chapters_merges_results(self):
+        self.library1.get_chapters.return_value.get.return_value = {
+            "dummy1:track": [Chapter(start=0, name="A")],
+        }
+        self.library2.get_chapters.return_value.get.return_value = {
+            "dummy2:track": [Chapter(start=1000, name="B")],
+        }
+
+        result = self.core.library.get_chapters(
+            ["dummy1:track", "dummy2:track", "dummy3:track", "dummy4:track"],
+        )
+        expected = {
+            "dummy1:track": (Chapter(start=0, name="A"),),
+            "dummy2:track": (Chapter(start=1000, name="B"),),
             "dummy3:track": (),
             "dummy4:track": (),
         }

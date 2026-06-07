@@ -13,6 +13,11 @@ class LibraryTest(unittest.TestCase):
 
         assert library.get_images(["trackuri"]) == {}
 
+    def test_default_get_chapters_impl(self):
+        library = dummy_backend.DummyLibraryProvider(backend=None)
+
+        assert library.get_chapters(["trackuri"]) == {}
+
     def test_lookup_many_falls_back(self):
         library = backend.LibraryProvider(backend=None)
         library.lookup = mock.Mock()

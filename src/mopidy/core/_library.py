@@ -13,7 +13,7 @@ from pykka.typing import proxy_method
 
 from mopidy import exceptions
 from mopidy.core import _validation as validation
-from mopidy.models import Image, Ref, SearchResult, Track
+from mopidy.models import Chapter, Image, Ref, SearchResult, Track
 from mopidy.types import DistinctField, Query, SearchField, Uri, UriScheme
 
 if TYPE_CHECKING:
@@ -224,6 +224,45 @@ class LibraryController:
                     results[uri] += tuple(images)
         return results
 
+    def get_chapters(
+        self, uris: Iterable[Uri]
+    ) -> dict[Uri, tuple[Chapter, ...]]:
+        """Lookup chapters / cue points for the given URIs.
+
+        Backends can use this to expose the internal tracklist of a single,
+        continuous audio file -- a DJ set, live recording, podcast, or
+        audiobook -- as an ordered list of cue points, *without* splitting it
+        into separate tracks. The result is a dictionary mapping the provided
+        URIs to ordered lists of chapters (by start offset).
+
+        Unknown URIs, or URIs whose backend has no chapters for them, simply
+        return an empty list for that URI. Mirrors get_images().
+
+        Args:
+            uris: List of URIs to find chapters for.
+        """
+        validation.check_uris(uris)
+
+        futures = {
+            backend: backend.library.get_chapters(backend_uris)
+            for (backend, backend_uris) in self._get_backends_to_uris(uris).items()
+            if backend_uris
+        }
+
+        results: dict[Uri, tuple[Chapter, ...]] = dict.fromkeys(uris, ())
+        for backend, future in futures.items():
+            with _backend_error_handling(backend):
+                if future.get() is None:
+                    continue
+                validation.check_instance(future.get(), Mapping)
+                for uri, chapters in future.get().items():
+                    if uri not in uris:
+                        msg = f"Got unknown chapter URI: {uri}"
+                        raise exceptions.ValidationError(msg)
+                    validation.check_instances(chapters, Chapter)
+                    results[uri] += tuple(chapters)
+        return results
+
     def lookup(self, uris: Iterable[Uri]) -> dict[Uri, list[Track]]:
         """Lookup the given URIs.
 
@@ -383,6 +422,7 @@ class LibraryControllerProxy:
     browse = proxy_method(LibraryController.browse)
     get_distinct = proxy_method(LibraryController.get_distinct)
     get_images = proxy_method(LibraryController.get_images)
+    get_chapters = proxy_method(LibraryController.get_chapters)
     lookup = proxy_method(LibraryController.lookup)
     refresh = proxy_method(LibraryController.refresh)
     search = proxy_method(LibraryController.search)
