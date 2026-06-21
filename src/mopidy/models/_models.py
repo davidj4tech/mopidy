@@ -148,7 +148,7 @@ class Track(BaseModel):
 
 
 class Chapter(BaseModel):
-    """A cue point / chapter within a single track.
+    """A chapter within a single track.
 
     Represents a named position *inside* one continuous audio file -- a segment
     of a DJ set or live recording, a podcast chapter, or an audiobook chapter.
@@ -170,10 +170,7 @@ class Chapter(BaseModel):
     """Chapter length in milliseconds, or None if unknown."""
 
     name: str | None = None
-    """Human title for this cue point, e.g. the mixed track's title."""
+    """Human title for this chapter, e.g. the mixed track's title."""
 
     artists: frozenset[Artist] = frozenset()
-    """Artists for this cue point (each segment of a DJ mix has its own)."""
-
-    image: Uri | None = None
-    """Optional thumbnail/art URI (podcast and video chapters carry one)."""
+    """Artists for this chapter (each segment of a DJ mix has its own)."""

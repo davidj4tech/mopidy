@@ -16,7 +16,6 @@ def test_optional_fields_default():
     assert chapter.length is None
     assert chapter.name is None
     assert chapter.artists == frozenset()
-    assert chapter.image is None
 
 
 def test_full_chapter():
@@ -25,7 +24,6 @@ def test_full_chapter():
         length=402000,
         name="Kerala",
         artists=frozenset([Artist(name="Bonobo")]),
-        image="https://img.example/k.jpg",
     )
     assert chapter.name == "Kerala"
     assert {a.name for a in chapter.artists} == {"Bonobo"}
